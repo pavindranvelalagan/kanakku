@@ -3,6 +3,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import 'models.dart';
+import 'utils/formatters.dart';
 
 class LedgerRepository {
   LedgerRepository._(
@@ -32,23 +33,34 @@ class LedgerRepository {
     );
   }
 
+  Map<dynamic, dynamic>? _asMap(dynamic value) {
+    if (value is Map) return Map<dynamic, dynamic>.from(value);
+    return null;
+  }
+
   List<Friend> loadFriends() {
     return _friends.values
-        .map((e) => Friend.fromMap(Map<dynamic, dynamic>.from(e)))
+        .map(_asMap)
+        .whereType<Map<dynamic, dynamic>>()
+        .map(Friend.fromMap)
         .toList()
       ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
   }
 
   List<LedgerTransaction> loadTransactions() {
     return _transactions.values
-        .map((e) => LedgerTransaction.fromMap(Map<dynamic, dynamic>.from(e)))
+        .map(_asMap)
+        .whereType<Map<dynamic, dynamic>>()
+        .map(LedgerTransaction.fromMap)
         .toList()
       ..sort((a, b) => b.date.compareTo(a.date));
   }
 
   List<SubscriptionPlan> loadSubscriptions() {
     return _subscriptions.values
-        .map((e) => SubscriptionPlan.fromMap(Map<dynamic, dynamic>.from(e)))
+        .map(_asMap)
+        .whereType<Map<dynamic, dynamic>>()
+        .map(SubscriptionPlan.fromMap)
         .toList()
       ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
   }
@@ -131,20 +143,39 @@ class LedgerRepository {
     DateTime now,
     String monthStamp,
   ) async {
-    for (final member in plan.memberIds) {
-      final tx = LedgerTransaction(
-        id: _uuid.v4(),
-        friendId: member,
-        amount: plan.amountPerMember,
-        delta: plan.amountPerMember,
-        type: TransactionType.autoSubscription,
-        description: '${plan.name} (${monthLabel(now)})',
-        date: now,
-        createdAt: now,
-        subscriptionId: plan.id,
-        monthStamp: monthStamp,
-      );
-      await addTransaction(tx);
+    if (plan.paidByMe) {
+      for (final member in plan.memberIds) {
+        final tx = LedgerTransaction(
+          id: _uuid.v4(),
+          friendId: member,
+          amount: plan.amountPerMember,
+          delta: plan.amountPerMember,
+          type: TransactionType.autoSubscription,
+          description: '${plan.name} (${monthLabel(now)})',
+          date: now,
+          createdAt: now,
+          subscriptionId: plan.id,
+          monthStamp: monthStamp,
+        );
+        await addTransaction(tx);
+      }
+    } else {
+      final payerId = plan.payerId;
+      if (payerId != null && payerId.isNotEmpty) {
+        final tx = LedgerTransaction(
+          id: _uuid.v4(),
+          friendId: payerId,
+          amount: plan.amountPerMember,
+          delta: -plan.amountPerMember,
+          type: TransactionType.autoSubscription,
+          description: '${plan.name} (${monthLabel(now)})',
+          date: now,
+          createdAt: now,
+          subscriptionId: plan.id,
+          monthStamp: monthStamp,
+        );
+        await addTransaction(tx);
+      }
     }
     await updateSubscription(plan.copyWith(lastBilledMonth: monthStamp));
   }
@@ -154,14 +185,21 @@ class LedgerRepository {
 
   AppSettings loadSettings() {
     final data = _settings.get('settings');
-    if (data is Map) {
-      return AppSettings.fromMap(Map<dynamic, dynamic>.from(data));
-    }
-    return AppSettings(userName: '', themeMode: 'system');
+    final map = _asMap(data);
+    return AppSettings.fromMap(map);
   }
 
   Future<void> saveSettings(AppSettings settings) async {
     await _settings.put('settings', settings.toMap());
+  }
+
+  Future<void> dispose() async {
+    await Future.wait([
+      _friends.close(),
+      _transactions.close(),
+      _subscriptions.close(),
+      _settings.close(),
+    ]);
   }
 }
 
@@ -179,6 +217,7 @@ class LedgerController extends ChangeNotifier {
   }
 
   final LedgerRepository repository;
+  final Uuid _uuid = const Uuid();
   late final ValueListenable _friendsListener;
   late final ValueListenable _txListener;
   late final ValueListenable _subscriptionListener;
@@ -234,7 +273,10 @@ class LedgerController extends ChangeNotifier {
     required DateTime date,
     required int currentBalance,
   }) async {
+    final friendExists = friends.any((f) => f.id == friendId);
+    if (!friendExists || amount <= 0) return;
     final now = DateTime.now();
+    final trimmedDescription = description.trim();
     int delta;
     switch (type) {
       case TransactionType.paid:
@@ -247,16 +289,16 @@ class LedgerController extends ChangeNotifier {
         delta = currentBalance >= 0 ? -amount : amount;
         break;
       case TransactionType.autoSubscription:
-        delta = amount;
-        break;
+      delta = amount;
+      break;
     }
     final tx = LedgerTransaction(
-      id: const Uuid().v4(),
+      id: _uuid.v4(),
       friendId: friendId,
       amount: amount,
       delta: delta,
       type: type,
-      description: description,
+      description: trimmedDescription,
       date: date,
       createdAt: now,
     );
@@ -269,7 +311,7 @@ class LedgerController extends ChangeNotifier {
     final now = DateTime.now();
     final delta = -balance;
     final tx = LedgerTransaction(
-      id: const Uuid().v4(),
+      id: _uuid.v4(),
       friendId: friendId,
       amount: balance.abs(),
       delta: delta,
@@ -285,14 +327,18 @@ class LedgerController extends ChangeNotifier {
     required String name,
     required int amountPerMember,
     required List<String> memberIds,
+    required bool paidByMe,
+    String? payerId,
   }) async {
     final plan = SubscriptionPlan(
-      id: const Uuid().v4(),
+      id: _uuid.v4(),
       name: name.trim(),
       amountPerMember: amountPerMember,
       memberIds: memberIds,
       createdAt: DateTime.now(),
       lastBilledMonth: '',
+      paidByMe: paidByMe,
+      payerId: payerId,
     );
     await repository.addSubscription(plan);
     await repository.ensurePlanChargesForCurrentMonth(plan, DateTime.now());
@@ -334,4 +380,13 @@ class LedgerController extends ChangeNotifier {
 
   List<LedgerTransaction> owedToYou() =>
       transactions.where((t) => t.delta > 0).toList();
+
+  @override
+  void dispose() {
+    _friendsListener.removeListener(_refresh);
+    _txListener.removeListener(_refresh);
+    _subscriptionListener.removeListener(_refresh);
+    _settingsListener.removeListener(_refresh);
+    super.dispose();
+  }
 }

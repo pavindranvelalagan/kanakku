@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../models.dart';
 import '../storage.dart';
 import '../theme/colors.dart';
+import '../utils/formatters.dart';
 import '../widgets/common.dart';
 import '../widgets/premium_card.dart';
 
@@ -20,15 +20,17 @@ class FriendDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return AnimatedBuilder(
       animation: controller,
       builder: (context, _) {
         final balance = controller.balanceForFriend(friend.id);
         final txs = controller.transactionsForFriend(friend.id);
+        final isSettled = balance == 0;
         return Scaffold(
-          backgroundColor: AppColors.backgroundLight,
+          backgroundColor: scheme.surface,
           appBar: AppBar(
-            backgroundColor: AppColors.backgroundLight,
+            backgroundColor: scheme.surface,
             title: Text(
               friend.name,
               style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
@@ -36,34 +38,26 @@ class FriendDetailScreen extends StatelessWidget {
             actions: [
               if (balance != 0)
                 TextButton.icon(
-                  onPressed: () async {
-                    await controller.settleFull(friend.id);
-                  },
+                  onPressed: () async => controller.settleFull(friend.id),
                   icon: const Icon(Icons.check_circle_outline, size: 20),
-                  label: Text(
-                    'Settle up',
-                    style: GoogleFonts.outfit(fontWeight: FontWeight.w600),
-                  ),
-                  style: TextButton.styleFrom(foregroundColor: AppColors.success),
+                  label: const Text('Settle up'),
+                  style: TextButton.styleFrom(foregroundColor: scheme.primary),
                 ),
               const SizedBox(width: 8),
             ],
           ),
           floatingActionButton: FloatingActionButton.extended(
             onPressed: () => _showAddTransactionSheet(context, balance),
-            backgroundColor: Colors.black,
-            foregroundColor: Colors.white,
+            backgroundColor: scheme.primary,
+            foregroundColor: scheme.onPrimary,
             icon: const Icon(Icons.add),
-            label: Text(
-              'Add Transaction',
-              style: GoogleFonts.outfit(fontWeight: FontWeight.w600),
-            ),
-          ).animate().scale(delay: 500.ms),
+            label: const Text('Add Transaction'),
+          ),
           body: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             child: Column(
               children: [
-                BalanceCard(balance: balance).animate().fadeIn().slideY(begin: -0.1, end: 0),
+                BalanceCard(balance: balance),
                 const SizedBox(height: 24),
                 Expanded(
                   child: txs.isEmpty
@@ -80,85 +74,79 @@ class FriendDetailScreen extends StatelessWidget {
                           padding: const EdgeInsets.only(bottom: 80),
                           itemBuilder: (context, index) {
                             final tx = txs[index];
-                            final settled = controller.balanceForFriend(friend.id) == 0;
                             final owesYou = tx.delta >= 0;
-                            
+                            final amountColor = isSettled
+                                ? scheme.onSurfaceVariant
+                                : (owesYou ? scheme.primary : AppColors.error);
+
                             return PremiumCard(
-                              onTap: () {}, // Maybe details?
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                              onLongPress: () =>
+                                  _confirmDelete(context, tx.id, tx.description),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 16),
                               child: Row(
                                 children: [
                                   Container(
                                     padding: const EdgeInsets.all(10),
                                     decoration: BoxDecoration(
-                                      color: (owesYou ? AppColors.success : AppColors.error).withOpacity(0.1),
+                                      color: amountColor.withOpacity(0.1),
                                       shape: BoxShape.circle,
                                     ),
                                     child: Icon(
-                                      owesYou ? Icons.arrow_outward : Icons.arrow_downward,
-                                      color: owesYou ? AppColors.success : AppColors.error,
+                                      owesYou
+                                          ? Icons.arrow_outward
+                                          : Icons.arrow_downward,
+                                      color: amountColor,
                                       size: 20,
                                     ),
                                   ),
                                   const SizedBox(width: 16),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           tx.description,
                                           style: GoogleFonts.outfit(
                                             fontSize: 16,
                                             fontWeight: FontWeight.w600,
-                                            decoration: settled ? TextDecoration.lineThrough : null,
-                                            color: settled 
-                                                ? AppColors.textSecondaryLight 
-                                                : AppColors.textPrimaryLight,
+                                            decoration: isSettled
+                                                ? TextDecoration.lineThrough
+                                                : null,
+                                            color: isSettled
+                                                ? scheme.onSurfaceVariant
+                                                : scheme.onSurface,
                                           ),
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
-                                          '${formatDateShort(tx.date)} • ${labelForType(tx.type)}',
+                                          '${formatDateShort(tx.date)} - ${labelForType(tx.type)}',
                                           style: GoogleFonts.outfit(
                                             fontSize: 12,
-                                            color: AppColors.textSecondaryLight,
+                                            color: scheme.onSurfaceVariant,
+                                            decoration: isSettled
+                                                ? TextDecoration.lineThrough
+                                                : null,
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Text(
-                                        formatSignedAmount(tx.delta),
-                                        style: GoogleFonts.outfit(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          color: settled 
-                                              ? AppColors.textSecondaryLight
-                                              : (owesYou ? AppColors.success : AppColors.error),
-                                          decoration: settled ? TextDecoration.lineThrough : null,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  
-                                  // Quick delete hidden (handled via logic? Original had LongPress)
-                                  // We can add a popup menu or swipe action.
-                                  // For simplicity, let's add a small more icon
-                                  PopupMenuButton(
-                                    icon: const Icon(Icons.more_vert, size: 20, color: Colors.grey),
-                                    itemBuilder: (context) => [
-                                      PopupMenuItem(
-                                        onTap: () => _confirmDelete(context, tx.id, tx.description),
-                                        child: Text('Delete', style: GoogleFonts.outfit(color: AppColors.error)),
-                                      ),
-                                    ],
+                                  Text(
+                                    formatSignedAmount(tx.delta),
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: amountColor,
+                                      decoration: isSettled
+                                          ? TextDecoration.lineThrough
+                                          : null,
+                                    ),
                                   ),
                                 ],
                               ),
-                            ).animate().fadeIn(delay: (50 * index).ms).slideX(begin: 0.1, end: 0);
+                            );
                           },
                         ),
                 ),
@@ -178,15 +166,15 @@ class FriendDetailScreen extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: Container(
-          decoration: const BoxDecoration(
-            color: AppColors.backgroundLight,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-          ),
+            builder: (_) => Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                ),
           child: AddTransactionSheet(
             controller: controller,
             friend: friend,
@@ -205,20 +193,19 @@ class FriendDetailScreen extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surfaceLight,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text('Delete transaction?', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-        content: Text('Remove "$description" from the ledger?', style: GoogleFonts.outfit()),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Delete transaction?'),
+        content: Text('Remove "$description" from the ledger?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: GoogleFonts.outfit(color: AppColors.textSecondaryLight)),
+            child: const Text('Cancel'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.error,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Delete'),
@@ -264,6 +251,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final muted = scheme.onSurfaceVariant;
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -272,8 +261,12 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
         children: [
           Center(
             child: Container(
-              width: 40, height: 4,
-              decoration: BoxDecoration(color: Colors.grey.withOpacity(0.3), borderRadius: BorderRadius.circular(2)),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
           ),
           const SizedBox(height: 24),
@@ -285,36 +278,30 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             ),
           ),
           const SizedBox(height: 24),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: TransactionType.values
-                  .where((t) => t != TransactionType.autoSubscription)
-                  .map((type) {
-                    final selected = _type == type;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: FilterChip(
-                        label: Text(labelForType(type)),
-                        selected: selected,
-                        onSelected: (_) => setState(() => _type = type),
-                        backgroundColor: AppColors.surfaceLight,
-                        selectedColor: AppColors.primary.withOpacity(0.1),
-                        labelStyle: GoogleFonts.outfit(
-                          color: selected ? AppColors.primary : AppColors.textSecondaryLight,
-                          fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20), 
-                          side: BorderSide(color: selected ? AppColors.primary : Colors.transparent),
-                        ),
-                        showCheckmark: false,
-                         side: BorderSide.none, 
-                      ),
-                    );
-                  })
-                  .toList(),
-            ),
+          Wrap(
+            spacing: 8,
+            children: TransactionType.values
+                .where((t) => t != TransactionType.autoSubscription)
+                .map((type) {
+              final selected = _type == type;
+              return FilterChip(
+                label: Text(labelForType(type)),
+                selected: selected,
+                onSelected: (_) => setState(() => _type = type),
+                backgroundColor: scheme.surface,
+                selectedColor: scheme.primary.withOpacity(0.12),
+                labelStyle: GoogleFonts.outfit(
+                  color: selected ? scheme.primary : muted,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(
+                      color: selected ? scheme.primary : Colors.transparent),
+                ),
+                showCheckmark: false,
+              );
+            }).toList(),
           ),
           const SizedBox(height: 24),
           TextField(
@@ -324,7 +311,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             decoration: InputDecoration(
               labelText: 'Amount',
               prefixText: 'Rs ',
-              labelStyle: GoogleFonts.outfit(color: AppColors.textSecondaryLight),
+              labelStyle: GoogleFonts.outfit(color: muted),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -339,7 +326,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             decoration: InputDecoration(
               labelText: 'What for?',
               hintText: 'Dinner, Movie, etc.',
-              labelStyle: GoogleFonts.outfit(color: AppColors.textSecondaryLight),
+              labelStyle: GoogleFonts.outfit(color: muted),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -369,11 +356,13 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.calendar_today_outlined, size: 20, color: AppColors.textSecondaryLight),
+                  Icon(Icons.calendar_today_outlined,
+                      size: 20, color: muted),
                   const SizedBox(width: 12),
                   Text(
                     formatDateShort(_date),
-                    style: GoogleFonts.outfit(fontWeight: FontWeight.w500),
+                    style:
+                        GoogleFonts.outfit(fontWeight: FontWeight.w500),
                   ),
                 ],
               ),
@@ -386,14 +375,17 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             child: ElevatedButton(
               onPressed: _saving ? null : _submit,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                backgroundColor: scheme.primary,
+                foregroundColor: scheme.onPrimary,
+                shape:
+                    RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 elevation: 0,
               ),
               child: _saving
                   ? const CircularProgressIndicator(color: Colors.white)
-                  : Text('Save Transaction', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold)),
+                  : Text('Save Transaction',
+                      style: GoogleFonts.outfit(
+                          fontSize: 16, fontWeight: FontWeight.bold)),
             ),
           ),
           const SizedBox(height: 16),
@@ -408,7 +400,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     if (amount == null || amount <= 0 || description.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-           SnackBar(content: Text('Enter amount and reason', style: GoogleFonts.outfit())),
+          const SnackBar(content: Text('Enter amount and reason')),
         );
       }
       return;

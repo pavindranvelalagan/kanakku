@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'models.dart';
@@ -69,7 +68,7 @@ class _SplashGateState extends State<SplashGate> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(milliseconds: 2000), () {
+    Future.delayed(const Duration(milliseconds: 1200), () {
       if (mounted) setState(() => _showMain = true);
     });
   }
@@ -81,7 +80,7 @@ class _SplashGateState extends State<SplashGate> {
     }
     
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight, // Or check theme
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -92,13 +91,6 @@ class _SplashGateState extends State<SplashGate> {
               decoration: BoxDecoration(
                 color: AppColors.primary,
                 shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withOpacity(0.3),
-                    blurRadius: 30,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
               ),
               child: Center(
                 child: Text(
@@ -110,9 +102,7 @@ class _SplashGateState extends State<SplashGate> {
                   ),
                 ),
               ),
-            ).animate()
-             .scale(duration: 600.ms, curve: Curves.easeOutBack)
-             .fadeIn(duration: 500.ms),
+            ),
             
             const SizedBox(height: 24),
             
@@ -123,9 +113,7 @@ class _SplashGateState extends State<SplashGate> {
                 letterSpacing: 1.2,
                 color: AppColors.primary,
               ),
-            ).animate(delay: 300.ms)
-             .fadeIn(duration: 500.ms)
-             .moveY(begin: 20, end: 0, duration: 500.ms, curve: Curves.easeOut),
+            ),
           ],
         ),
       ),
@@ -194,6 +182,7 @@ class _MainShellState extends State<MainShell> {
         return Scaffold(
           extendBody: true, // Allow body to go behind the floating nav
           body: Stack(
+            fit: StackFit.expand,
             children: [
               _buildBody(),
               Positioned(
@@ -213,7 +202,6 @@ class _MainShellState extends State<MainShell> {
   }
 
   Widget _buildBody() {
-    // Add padding to bottom to account for the floating nav
     final bottomPadding = EdgeInsets.only(bottom: 100.0); 
 
     Widget content;
@@ -243,19 +231,13 @@ class _MainShellState extends State<MainShell> {
         content = HomeScreen(controller: widget.controller);
     }
     
-    // Wrap content to ensure it doesn't get hidden behind the nav
-    // Use SafeArea or Padding. Since screens might have their own Scaffolds/Lists, 
-    // wrapping here might be tricky if they rely on full height.
-    // However, since we use Stack for the Nav, we need to ensure the list has padding at the bottom.
-    // The cleanest way is to pass this padding to the screens, BUT 
-    // for now, let's wrap strictly the display. 
-    // Actually, most screens are Lists. We should ideally update the screens to have bottom padding.
-    // For now, I will wrap in a Container with padding, but this might clip background colors?
-    // No, Scaffold background is global.
-    
-    return Container(
-      padding: bottomPadding,
-      child: content,
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 140),
+      child: Container(
+        key: ValueKey(_index),
+        padding: bottomPadding,
+        child: content,
+      ),
     );
   }
 }

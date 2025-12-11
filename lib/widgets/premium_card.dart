@@ -7,6 +7,7 @@ class PremiumCard extends StatelessWidget {
     this.padding,
     this.margin,
     this.onTap,
+    this.onLongPress,
     this.color,
     this.height,
     this.width,
@@ -16,6 +17,7 @@ class PremiumCard extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
   final EdgeInsetsGeometry? margin;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final Color? color;
   final double? height;
   final double? width;
@@ -51,6 +53,7 @@ class PremiumCard extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(24),
           onTap: onTap,
+          onLongPress: onLongPress,
           child: Padding(
             padding: padding ?? const EdgeInsets.all(20),
             child: child,

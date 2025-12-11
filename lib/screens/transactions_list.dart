@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../models.dart';
 import '../storage.dart';
 import '../theme/colors.dart';
+import '../utils/formatters.dart';
 import '../widgets/premium_card.dart';
 
 enum TransactionFilter { youOwe, owedToYou }
@@ -24,27 +23,29 @@ class TransactionsListScreen extends StatelessWidget {
     return AnimatedBuilder(
       animation: controller,
       builder: (context, _) {
+        final scheme = Theme.of(context).colorScheme;
+        final textTheme = Theme.of(context).textTheme;
+        final muted = textTheme.bodySmall?.color?.withOpacity(0.65) ??
+            scheme.onSurfaceVariant;
         final txs = filter == TransactionFilter.youOwe
             ? controller.owedByYou()
             : controller.owedToYou();
-        final title = filter == TransactionFilter.youOwe
-            ? 'You owe these'
-            : 'They owe you';
-        
+        final title =
+            filter == TransactionFilter.youOwe ? 'You owe these' : 'They owe you';
+
         return Scaffold(
-          backgroundColor: AppColors.backgroundLight,
+          backgroundColor: scheme.surface,
           body: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            padding: const EdgeInsets.fromLTRB(24, 48, 24, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.outfit(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimaryLight,
-                  ),
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleLarge
+                      ?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 Expanded(
@@ -54,17 +55,14 @@ class TransactionsListScreen extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
-                                Icons.check_circle_outline, 
-                                size: 64, 
-                                color: Colors.grey.withOpacity(0.3)
-                              ).animate().scale(),
-                              const SizedBox(height: 16),
+                                Icons.check_circle_outline,
+                                size: 64,
+                                color: muted,
+                              ),
+                              const SizedBox(height: 12),
                               Text(
                                 'No transactions found.',
-                                style: GoogleFonts.outfit(
-                                  color: AppColors.textSecondaryLight,
-                                  fontSize: 16,
-                                ),
+                                style: textTheme.bodyMedium?.copyWith(color: muted),
                               ),
                             ],
                           ),
@@ -75,72 +73,90 @@ class TransactionsListScreen extends StatelessWidget {
                           padding: const EdgeInsets.only(bottom: 24),
                           itemBuilder: (context, index) {
                             final tx = txs[index];
-                            final friend =
-                                controller.friends.firstWhere((f) => f.id == tx.friendId,
-                                    orElse: () => Friend(
-                                          id: tx.friendId,
-                                          name: 'Unknown',
-                                          createdAt: DateTime.now(),
-                                        ));
+                            final friend = controller.friends.firstWhere(
+                                (f) => f.id == tx.friendId,
+                                orElse: () => Friend(
+                                      id: tx.friendId,
+                                      name: 'Unknown',
+                                      createdAt: DateTime.now(),
+                                    ));
                             final settled =
                                 controller.balanceForFriend(friend.id) == 0;
-                            
                             final owesYou = tx.delta >= 0;
+                            final amountColor =
+                                settled ? muted : (owesYou ? scheme.primary : AppColors.error);
 
-                            return PremiumCard(
-                              padding: const EdgeInsets.all(16),
-                              child: Row(
-                                children: [
-                                  CircleAvatar(
-                                    backgroundColor: (owesYou ? AppColors.success : AppColors.error).withOpacity(0.1),
-                                    child: Text(
-                                      (friend.name.isNotEmpty ? friend.name[0] : '?').toUpperCase(),
-                                      style: GoogleFonts.outfit(
-                                        color: owesYou ? AppColors.success : AppColors.error,
-                                        fontWeight: FontWeight.bold,
+                            return AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 140),
+                              child: PremiumCard(
+                                key: ValueKey('${tx.id}-$settled'),
+                                padding: const EdgeInsets.all(16),
+                                child: Row(
+                                  children: [
+                                    CircleAvatar(
+                                      backgroundColor: amountColor.withOpacity(0.1),
+                                      child: Text(
+                                        (friend.name.isNotEmpty
+                                                ? friend.name[0]
+                                                : '?')
+                                            .toUpperCase(),
+                                        style: TextStyle(
+                                          color: amountColor,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          friend.name,
-                                          style: GoogleFonts.outfit(
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            friend.name,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .titleMedium
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: settled
+                                                      ? muted
+                                                      : scheme.onSurface,
+                                                  decoration: settled
+                                                      ? TextDecoration.lineThrough
+                                                      : null,
+                                                ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            '${formatDateShort(tx.date)} - ${tx.description}',
+                                            style:
+                                                textTheme.bodySmall?.copyWith(
+                                              color: muted,
+                                              decoration: settled
+                                                  ? TextDecoration.lineThrough
+                                                  : null,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Text(
+                                      formatSignedAmount(tx.delta),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium
+                                          ?.copyWith(
                                             fontWeight: FontWeight.bold,
-                                            fontSize: 16,
-                                            color: settled ? AppColors.textSecondaryLight : AppColors.textPrimaryLight,
-                                            decoration: settled ? TextDecoration.lineThrough : null,
+                                            color: amountColor,
+                                            decoration: settled
+                                                ? TextDecoration.lineThrough
+                                                : null,
                                           ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          '${formatDateShort(tx.date)} • ${tx.description}',
-                                          style: GoogleFonts.outfit(
-                                            fontSize: 12,
-                                            color: AppColors.textSecondaryLight,
-                                            decoration: settled ? TextDecoration.lineThrough : null,
-                                          ),
-                                        ),
-                                      ],
                                     ),
-                                  ),
-                                  Text(
-                                    formatSignedAmount(tx.delta),
-                                    style: GoogleFonts.outfit(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                      color: settled 
-                                          ? AppColors.textSecondaryLight 
-                                          : (owesYou ? AppColors.success : AppColors.error),
-                                      decoration: settled ? TextDecoration.lineThrough : null,
-                                    ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ).animate().fadeIn(delay: (50 * index).ms).slideX(begin: 0.1, end: 0);
+                            );
                           },
                         ),
                 ),

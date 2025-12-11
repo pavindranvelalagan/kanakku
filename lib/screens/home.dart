@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../models.dart';
 import '../storage.dart';
 import '../theme/colors.dart';
+import '../utils/formatters.dart';
 import '../widgets/common.dart';
 import '../widgets/premium_card.dart';
 import 'friend_detail.dart';
@@ -20,30 +20,35 @@ class HomeScreen extends StatelessWidget {
       animation: controller,
       builder: (context, _) {
         final net = controller.totalNetBalance();
+        final userName = controller.settings.userName.trim();
+        final greeting = userName.isEmpty ? 'Hello, there!' : 'Hello, $userName!';
+        final theme = Theme.of(context);
+        final scheme = theme.colorScheme;
+        final muted = scheme.onSurface.withOpacity(0.65);
         return Scaffold(
-          backgroundColor: AppColors.backgroundLight,
+          backgroundColor: scheme.surface,
           floatingActionButton: FloatingActionButton(
             onPressed: () => _showAddFriendDialog(context),
-            backgroundColor: Colors.black,
-            child: const Icon(Icons.add, color: Colors.white),
-          ).animate().scale(delay: 500.ms),
+            backgroundColor: scheme.primary,
+            child: Icon(Icons.add, color: scheme.onPrimary),
+          ),
           body: CustomScrollView(
             slivers: [
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
+                padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      mainAxisAlignment: MainAxisAlignment.start,
                       children: [
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Hello, There!',
+                              greeting,
                               style: GoogleFonts.outfit(
                                 fontSize: 16,
-                                color: AppColors.textSecondaryLight,
+                                color: muted,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -52,46 +57,23 @@ class HomeScreen extends StatelessWidget {
                               style: GoogleFonts.outfit(
                                 fontSize: 28,
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimaryLight,
+                                color: scheme.onSurface,
                               ),
                             ),
                           ],
-                        ),
-                        CircleAvatar(
-                          backgroundColor: AppColors.backgroundLight,
-                          radius: 24,
-                          backgroundImage: 
-                              const NetworkImage('https://i.pravatar.cc/150?img=12'), // Placeholder or Initials
-                          // If offline, use Initials
-                          child: const Icon(Icons.person, color: AppColors.textSecondaryLight),
                         ),
                       ],
                     ),
                     const SizedBox(height: 32),
                     TotalHeader(net: net),
                     const SizedBox(height: 32),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Friends',
-                          style: GoogleFonts.outfit(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimaryLight,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () {}, // Maybe View All?
-                          child: Text(
-                            'View All',
-                            style: GoogleFonts.outfit(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
+                    Text(
+                      'Friends',
+                      style: GoogleFonts.outfit(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: scheme.onSurface,
+                      ),
                     ),
                     const SizedBox(height: 16),
                   ]),
@@ -126,13 +108,14 @@ class HomeScreen extends StatelessWidget {
                                   ),
                                 );
                               },
+                              onLongPress: () => _confirmDeleteFriend(context, friend),
                               child: Row(
                                 children: [
                                   Container(
                                     height: 50,
                                     width: 50,
                                     decoration: BoxDecoration(
-                                      color: AppColors.primary.withOpacity(0.1),
+                                      color: scheme.primary.withOpacity(0.1),
                                       shape: BoxShape.circle,
                                     ),
                                     child: Center(
@@ -141,7 +124,7 @@ class HomeScreen extends StatelessWidget {
                                         style: GoogleFonts.outfit(
                                           fontSize: 22,
                                           fontWeight: FontWeight.bold,
-                                          color: AppColors.primary,
+                                          color: scheme.primary,
                                         ),
                                       ),
                                     ),
@@ -156,7 +139,7 @@ class HomeScreen extends StatelessWidget {
                                           style: GoogleFonts.outfit(
                                             fontSize: 18,
                                             fontWeight: FontWeight.w600,
-                                            color: AppColors.textPrimaryLight,
+                                            color: scheme.onSurface,
                                           ),
                                         ),
                                         const SizedBox(height: 4),
@@ -164,7 +147,7 @@ class HomeScreen extends StatelessWidget {
                                           'Tap to view details',
                                           style: GoogleFonts.outfit(
                                             fontSize: 12,
-                                            color: AppColors.textSecondaryLight,
+                                            color: muted,
                                           ),
                                         ),
                                       ],
@@ -178,7 +161,9 @@ class HomeScreen extends StatelessWidget {
                                         style: GoogleFonts.outfit(
                                           fontSize: 16,
                                           fontWeight: FontWeight.bold,
-                                          color: owesYou ? AppColors.success : AppColors.error,
+                                          color: owesYou
+                                              ? scheme.primary
+                                              : AppColors.error,
                                         ),
                                       ),
                                       const SizedBox(height: 4),
@@ -186,14 +171,14 @@ class HomeScreen extends StatelessWidget {
                                         owesYou ? 'owed' : 'due',
                                         style: GoogleFonts.outfit(
                                           fontSize: 12,
-                                          color: AppColors.textSecondaryLight,
+                                          color: muted,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ],
                               ),
-                            ).animate().fadeIn(delay: (50 * index).ms).slideX(begin: 0.1, end: 0),
+                            ),
                           );
                         },
                         childCount: controller.friends.length,
@@ -209,10 +194,14 @@ class HomeScreen extends StatelessWidget {
 
   Future<void> _showAddFriendDialog(BuildContext context) async {
     final textController = TextEditingController();
+    final scheme = Theme.of(context).colorScheme;
+    final muted =
+        Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7) ??
+            scheme.onSurfaceVariant;
     await showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surfaceLight,
+        backgroundColor: scheme.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Text('Add friend', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
         content: TextField(
@@ -227,7 +216,7 @@ class HomeScreen extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: GoogleFonts.outfit(color: AppColors.textSecondaryLight)),
+            child: Text('Cancel', style: GoogleFonts.outfit(color: muted)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -248,6 +237,29 @@ class HomeScreen extends StatelessWidget {
   }
 
   Future<void> _confirmDeleteFriend(BuildContext context, Friend friend) async {
-    // Kept for reference but not attached in UI currently (except maybe friend detail)
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete friend?'),
+        content: Text('Delete ${friend.name} and all their transactions?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await controller.deleteFriend(friend.id);
+    }
   }
 }

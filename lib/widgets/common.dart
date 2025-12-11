@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../models.dart';
 import '../theme/colors.dart';
+import '../utils/formatters.dart';
 import 'premium_card.dart';
 
 class TotalHeader extends StatelessWidget {
@@ -13,74 +12,42 @@ class TotalHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final owesYou = net >= 0;
-    
-    // Gradient Background for impact
+    final scheme = Theme.of(context).colorScheme;
+    final amountColor = owesYou ? scheme.primary : AppColors.error;
     return PremiumCard(
-      padding: EdgeInsets.zero,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          gradient: LinearGradient(
-            colors: owesYou
-                ? [const Color(0xFF4E71F3), const Color(0xFF7692FF)]
-                : [const Color(0xFFFF3B30), const Color(0xFFFF6B64)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+      padding: const EdgeInsets.all(20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                owesYou ? 'Total owed to you' : 'Total you owe',
+                style: GoogleFonts.outfit(
+                  color: scheme.onSurface.withOpacity(0.7),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                formatSignedAmount(net),
+                style: GoogleFonts.outfit(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: amountColor,
+                ),
+              ),
+            ],
           ),
-          boxShadow: [
-             BoxShadow(
-              color: (owesYou ? const Color(0xFF4E71F3) : const Color(0xFFFF3B30)).withOpacity(0.4),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      owesYou ? 'Overall You are Owed' : 'Overall You Owe',
-                      style: GoogleFonts.outfit(
-                        color: Colors.white.withOpacity(0.9),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      formatSignedAmount(net),
-                      style: GoogleFonts.outfit(
-                        color: Colors.white,
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    owesYou ? Icons.arrow_outward_rounded : Icons.arrow_downward_rounded,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+          Icon(
+            owesYou ? Icons.arrow_outward : Icons.arrow_downward,
+            color: amountColor,
+          ),
+        ],
       ),
-    ).animate().fadeIn().slideY(begin: 0.2, end: 0, duration: 400.ms, curve: Curves.easeOut);
+    );
   }
 }
 
@@ -91,8 +58,7 @@ class BalanceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final owesYou = balance >= 0;
-    
+    final color = balance >= 0 ? scheme.primary : AppColors.error;
     return PremiumCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -109,9 +75,9 @@ class BalanceCard extends StatelessWidget {
           Text(
             formatSignedAmount(balance),
             style: GoogleFonts.outfit(
-              fontSize: 36,
+              fontSize: 32,
               fontWeight: FontWeight.bold,
-              color: owesYou ? AppColors.success : AppColors.error,
+              color: color,
             ),
           ),
         ],
@@ -136,6 +102,7 @@ class EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32.0),
@@ -149,19 +116,18 @@ class EmptyState extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                Icons.bubble_chart_outlined,
+                Icons.inbox_outlined,
                 size: 48,
                 color: AppColors.primary.withOpacity(0.6),
               ),
-            ).animate(onPlay: (c) => c.repeat(reverse: true))
-             .scale(begin: const Offset(1,1), end: const Offset(1.1,1.1), duration: 2000.ms),
+            ),
             const SizedBox(height: 24),
             Text(
               title,
               style: GoogleFonts.outfit(
-                fontSize: 20, 
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.onSurface,
+                color: scheme.onSurface,
               ),
             ),
             const SizedBox(height: 8),
@@ -169,28 +135,24 @@ class EmptyState extends StatelessWidget {
               message,
               textAlign: TextAlign.center,
               style: GoogleFonts.outfit(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                color: scheme.onSurface.withOpacity(0.6),
                 fontSize: 15,
                 height: 1.4,
               ),
             ),
             if (actionLabel != null && onAction != null) ...[
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
-                  elevation: 4,
-                  shadowColor: AppColors.primary.withOpacity(0.4),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                onPressed: onAction, 
-                child: Text(
-                  actionLabel!,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-              ).animate().fadeIn(delay: 300.ms),
+                onPressed: onAction,
+                child: Text(actionLabel!),
+              ),
             ],
           ],
         ),

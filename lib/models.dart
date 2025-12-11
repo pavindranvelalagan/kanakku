@@ -101,6 +101,8 @@ class SubscriptionPlan {
     required this.memberIds,
     required this.createdAt,
     required this.lastBilledMonth,
+    required this.paidByMe,
+    this.payerId,
   });
 
   final String id;
@@ -109,12 +111,16 @@ class SubscriptionPlan {
   final List<String> memberIds;
   final DateTime createdAt;
   final String lastBilledMonth; // yyyy-MM
+  final bool paidByMe; // true => you pay total; false => a friend pays total
+  final String? payerId; // friend who pays when paidByMe is false
 
   SubscriptionPlan copyWith({
     String? name,
     int? amountPerMember,
     List<String>? memberIds,
     String? lastBilledMonth,
+    bool? paidByMe,
+    String? payerId,
   }) {
     return SubscriptionPlan(
       id: id,
@@ -123,6 +129,8 @@ class SubscriptionPlan {
       memberIds: memberIds ?? this.memberIds,
       createdAt: createdAt,
       lastBilledMonth: lastBilledMonth ?? this.lastBilledMonth,
+      paidByMe: paidByMe ?? this.paidByMe,
+      payerId: payerId ?? this.payerId,
     );
   }
 
@@ -134,6 +142,8 @@ class SubscriptionPlan {
       'memberIds': memberIds,
       'createdAt': createdAt.millisecondsSinceEpoch,
       'lastBilledMonth': lastBilledMonth,
+      'paidByMe': paidByMe,
+      'payerId': payerId,
     };
   }
 
@@ -147,6 +157,8 @@ class SubscriptionPlan {
       createdAt:
           DateTime.fromMillisecondsSinceEpoch(map['createdAt'] as int? ?? 0),
       lastBilledMonth: map['lastBilledMonth'] as String? ?? '',
+      paidByMe: map['paidByMe'] as bool? ?? true,
+      payerId: map['payerId'] as String?,
     );
   }
 }
@@ -175,61 +187,5 @@ class AppSettings {
       userName: map['userName'] as String? ?? '',
       themeMode: map['themeMode'] as String? ?? 'system',
     );
-  }
-}
-
-String formatSignedAmount(int amount) {
-  final prefix = amount >= 0 ? '+' : '-';
-  final value = amount.abs();
-  return '$prefix Rs $value';
-}
-
-String formatDateShort(DateTime date) {
-  const months = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec'
-  ];
-  final month = months[date.month - 1];
-  return '$month ${date.day.toString().padLeft(2, '0')}';
-}
-
-String monthLabel(DateTime date) {
-  const months = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec'
-  ];
-  return '${months[date.month - 1]} ${date.year}';
-}
-
-String labelForType(TransactionType type) {
-  switch (type) {
-    case TransactionType.paid:
-      return 'I Paid';
-    case TransactionType.borrowed:
-      return 'I Borrowed';
-    case TransactionType.partial:
-      return 'Partial Payment';
-    case TransactionType.autoSubscription:
-      return 'Auto Subscription';
   }
 }

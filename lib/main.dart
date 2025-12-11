@@ -50,7 +50,7 @@ ThemeMode _themeModeFrom({required AppSettings settings}) {
   }
 }
 
-final _accentBlue = const Color(0xFF1DA1F2);
+final _accentBlue = const Color(0xFF0097B2);
 
 final _lightTheme = ThemeData(
   useMaterial3: true,

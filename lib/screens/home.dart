@@ -40,6 +40,10 @@ class HomeScreen extends StatelessWidget {
                             itemBuilder: (context, index) {
                               final friend = controller.friends[index];
                               final balance = controller.balanceForFriend(friend.id);
+                              final scheme = Theme.of(context).colorScheme;
+                              final amountColor = balance >= 0
+                                  ? scheme.primary
+                                  : scheme.onSurface.withOpacity(0.8);
                               return ListTile(
                                 onLongPress: () =>
                                     _confirmDeleteFriend(context, friend),
@@ -48,9 +52,7 @@ class HomeScreen extends StatelessWidget {
                                 trailing: Text(
                                   formatSignedAmount(balance),
                                   style: TextStyle(
-                                    color: balance >= 0
-                                        ? Colors.green.shade700
-                                        : Colors.red.shade700,
+                                    color: amountColor,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),

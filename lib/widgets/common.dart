@@ -12,9 +12,10 @@ class TotalHeader extends StatelessWidget {
     final label = owesYou ? 'Total owed to you' : 'Total you owe';
     final colorScheme = Theme.of(context).colorScheme;
     final cardColor =
-        colorScheme.brightness == Brightness.dark ? colorScheme.surfaceVariant : Colors.white;
+        colorScheme.brightness == Brightness.dark ? Colors.black : Colors.white;
     final labelColor = colorScheme.onSurface;
-    final amountColor = owesYou ? Colors.green.shade400 : Colors.red.shade300;
+    final amountColor =
+        owesYou ? colorScheme.primary : colorScheme.onSurface.withOpacity(0.8);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -59,16 +60,19 @@ class BalanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: scheme.brightness == Brightness.dark ? Colors.black : Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(
+              scheme.brightness == Brightness.dark ? 0.25 : 0.05,
+            ),
+            blurRadius: scheme.brightness == Brightness.dark ? 2 : 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -85,7 +89,9 @@ class BalanceCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: balance >= 0 ? Colors.green.shade700 : Colors.red.shade700,
+              color: balance >= 0
+                  ? scheme.primary
+                  : scheme.onSurface.withOpacity(0.85),
             ),
           ),
         ],

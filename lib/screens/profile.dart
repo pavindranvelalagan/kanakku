@@ -25,7 +25,7 @@ class ProfileScreen extends StatelessWidget {
         final maxValue =
             [totalPositive.abs(), totalNegative.abs(), 1].reduce((a, b) => a > b ? a : b);
 
-        return Padding(
+        return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -71,14 +71,14 @@ class ProfileScreen extends StatelessWidget {
                 label: 'You should receive',
                 value: totalPositive,
                 maxValue: maxValue,
-                color: Colors.green.shade600,
+                color: Theme.of(context).colorScheme.primary,
               ),
               const SizedBox(height: 8),
               _BarRow(
                 label: 'You should pay',
                 value: totalNegative,
                 maxValue: maxValue,
-                color: Colors.red.shade600,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
               ),
               const SizedBox(height: 24),
               Align(

@@ -64,9 +64,10 @@ class TransactionsListScreen extends StatelessWidget {
                                       ));
                           final settled =
                               controller.balanceForFriend(friend.id) == 0;
+                          final scheme = Theme.of(context).colorScheme;
                           final color = tx.delta >= 0
-                              ? Colors.green.shade700
-                              : Colors.red.shade700;
+                              ? scheme.primary
+                              : scheme.onSurface.withOpacity(0.8);
                           final strike = settled
                               ? TextStyle(
                                   decoration: TextDecoration.lineThrough,

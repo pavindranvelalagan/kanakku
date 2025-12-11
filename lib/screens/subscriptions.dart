@@ -379,21 +379,34 @@ class _AddSubscriptionSheetState extends State<AddSubscriptionSheet> {
               ),
             ),
             const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              value: _payerFriendId,
-              items: friends
-                  .map(
-                    (f) => DropdownMenuItem(
-                      value: f.id,
-                      child: Text(f.name),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: friends.map((friend) {
+                final selected = _payerFriendId == friend.id;
+                return ChoiceChip(
+                  label: Text(friend.name),
+                  selected: selected,
+                  onSelected: (val) {
+                    setState(() {
+                      _payerFriendId = val ? friend.id : null;
+                    });
+                  },
+                  selectedColor: scheme.primary.withOpacity(0.12),
+                  backgroundColor: scheme.surface,
+                  labelStyle: GoogleFonts.outfit(
+                    color: selected ? scheme.primary : muted,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(
+                      color: selected ? scheme.primary : Colors.transparent,
                     ),
-                  )
-                  .toList(),
-              onChanged: (value) => setState(() => _payerFriendId = value),
-              decoration: const InputDecoration(
-                labelText: 'Select friend',
-                border: OutlineInputBorder(),
-              ),
+                  ),
+                  showCheckmark: false,
+                );
+              }).toList(),
             ),
             if (!hasFriends)
               Padding(

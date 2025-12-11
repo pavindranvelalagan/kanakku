@@ -36,10 +36,11 @@ flutter test
 - No cloud sync. Back up by copying the app’s local storage if needed.
 
 ## Contributing
+- Feel free to contribute to this repo if you have any sort of interest :)
 - Open a PR with a clear description, screenshots for UI changes, and include test results.
-- Keep components theme-aware (light/dark) and prefer shared widgets/styles before adding new ones.
+- Just make sure to keep components theme-aware (light/dark) and prefer shared widgets/styles before adding new ones.
 
 ## License
 Licensed under the Creative Commons Attribution 4.0 International (CC BY 4.0) License.
 
-You are free to copy, redistribute, and adapt this work for any purpose, including commercial, provided you give appropriate credit to the “Kanakku contributors” and include a link to the license. See the full text at https://creativecommons.org/licenses/by/4.0/.
+You are free to copy, redistribute, and adapt this work for any purpose, including commercial, provided you give appropriate credit. See the full text at https://creativecommons.org/licenses/by/4.0/.

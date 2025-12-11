@@ -10,17 +10,23 @@ class TotalHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final owesYou = net >= 0;
     final label = owesYou ? 'Total owed to you' : 'Total you owe';
-    final color = owesYou ? Colors.green.shade700 : Colors.red.shade700;
+    final colorScheme = Theme.of(context).colorScheme;
+    final cardColor =
+        colorScheme.brightness == Brightness.dark ? colorScheme.surfaceVariant : Colors.white;
+    final labelColor = colorScheme.onSurface;
+    final amountColor = owesYou ? Colors.green.shade400 : Colors.red.shade300;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardColor,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(
+              colorScheme.brightness == Brightness.dark ? 0.25 : 0.05,
+            ),
+            blurRadius: colorScheme.brightness == Brightness.dark ? 2 : 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -28,11 +34,18 @@ class TotalHeader extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: labelColor,
+              )),
           Text(
             formatSignedAmount(net),
-            style:
-                TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              color: amountColor,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),

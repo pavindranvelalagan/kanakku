@@ -106,19 +106,20 @@ class ProfileScreen extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Your name'),
-        content: Padding(
-          padding:
-              EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-          child: SingleChildScrollView(
-            child: TextField(
-              controller: textController,
-              decoration: const InputDecoration(
-                labelText: 'Name',
-                hintText: 'Pavindran',
-              ),
+        content: SingleChildScrollView(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: TextField(
+            controller: textController,
+            decoration: const InputDecoration(
+              labelText: 'Name',
+              hintText: 'Pavindran',
             ),
+            maxLength: 40,
           ),
         ),
+        contentPadding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),

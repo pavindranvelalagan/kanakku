@@ -63,18 +63,31 @@ class FriendDetailScreen extends StatelessWidget {
                             final color = tx.delta >= 0
                                 ? Colors.green.shade700
                                 : Colors.red.shade700;
+                            final settled = controller.balanceForFriend(friend.id) == 0;
+                            final strikeStyle = settled
+                                ? const TextStyle(
+                                    decoration: TextDecoration.lineThrough,
+                                    color: Colors.grey,
+                                  )
+                                : null;
                             return ListTile(
                               onLongPress: () =>
                                   _confirmDelete(context, tx.id, tx.description),
-                              title: Text(tx.description),
+                              title: Text(
+                                tx.description,
+                                style: strikeStyle,
+                              ),
                               subtitle: Text(
                                 '${formatDateShort(tx.date)} • ${labelForType(tx.type)}',
+                                style: strikeStyle,
                               ),
                               trailing: Text(
                                 formatSignedAmount(tx.delta),
                                 style: TextStyle(
-                                  color: color,
+                                  color: settled ? Colors.grey : color,
                                   fontWeight: FontWeight.w700,
+                                  decoration:
+                                      settled ? TextDecoration.lineThrough : null,
                                 ),
                               ),
                             );

@@ -152,19 +152,29 @@ class SubscriptionPlan {
 }
 
 class AppSettings {
-  AppSettings({required this.userName});
+  AppSettings({required this.userName, required this.themeMode});
 
   final String userName;
+  final String themeMode; // system|light|dark
 
-  AppSettings copyWith({String? userName}) {
-    return AppSettings(userName: userName ?? this.userName);
+  AppSettings copyWith({String? userName, String? themeMode}) {
+    return AppSettings(
+      userName: userName ?? this.userName,
+      themeMode: themeMode ?? this.themeMode,
+    );
   }
 
-  Map<String, dynamic> toMap() => {'userName': userName};
+  Map<String, dynamic> toMap() =>
+      {'userName': userName, 'themeMode': themeMode};
 
   static AppSettings fromMap(Map<dynamic, dynamic>? map) {
-    if (map == null) return AppSettings(userName: '');
-    return AppSettings(userName: map['userName'] as String? ?? '');
+    if (map == null) {
+      return AppSettings(userName: '', themeMode: 'system');
+    }
+    return AppSettings(
+      userName: map['userName'] as String? ?? '',
+      themeMode: map['themeMode'] as String? ?? 'system',
+    );
   }
 }
 

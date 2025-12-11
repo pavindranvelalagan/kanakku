@@ -62,20 +62,32 @@ class TransactionsListScreen extends StatelessWidget {
                                         name: 'Unknown',
                                         createdAt: DateTime.now(),
                                       ));
+                          final settled =
+                              controller.balanceForFriend(friend.id) == 0;
                           final color = tx.delta >= 0
                               ? Colors.green.shade700
                               : Colors.red.shade700;
+                          final strike = settled
+                              ? TextStyle(
+                                  decoration: TextDecoration.lineThrough,
+                                  color: Colors.grey,
+                                )
+                              : null;
                           return ListTile(
                             title: Text(friend.name),
                             subtitle: Text(
-                                '${formatDateShort(tx.date)} • ${tx.description}'),
+                                '${formatDateShort(tx.date)} • ${tx.description}',
+                                style: strike),
                             trailing: Text(
                               formatSignedAmount(tx.delta),
                               style: TextStyle(
-                                color: color,
+                                color: settled ? Colors.grey : color,
                                 fontWeight: FontWeight.w700,
+                                decoration:
+                                    settled ? TextDecoration.lineThrough : null,
                               ),
                             ),
+                            textColor: settled ? Colors.grey : null,
                           );
                         },
                       ),

@@ -28,50 +28,43 @@ class ProfileScreen extends StatelessWidget {
         return Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: Colors.teal.shade100,
-                    child: Text(
-                      (name.isNotEmpty ? name[0] : 'K').toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.teal.shade800,
-                      ),
-                    ),
+              const SizedBox(height: 12),
+              CircleAvatar(
+                radius: 32,
+                backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                child: Text(
+                  (name.isNotEmpty ? name[0] : 'K').toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          name.isEmpty ? "Tap to set your name" : name,
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w700),
-                        ),
-                        TextButton(
-                          onPressed: () => _promptName(context),
-                          child: const Text('Edit name'),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
               Text(
-                'History snapshot',
+                name.isEmpty ? "Tap to set your name" : name,
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium
                     ?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              TextButton(
+                onPressed: () => _promptName(context),
+                child: const Text('Edit name'),
+              ),
+              const SizedBox(height: 24),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'History snapshot',
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
               ),
               const SizedBox(height: 12),
               _BarRow(
@@ -88,18 +81,18 @@ class ProfileScreen extends StatelessWidget {
                 color: Colors.red.shade600,
               ),
               const SizedBox(height: 24),
-              Text(
-                "App title preview",
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w700),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Theme',
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
               ),
               const SizedBox(height: 8),
-              Text(
-                controller.effectiveAppTitle(),
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
+              _ThemeSelector(controller: controller),
             ],
           ),
         );
@@ -113,11 +106,17 @@ class ProfileScreen extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Your name'),
-        content: TextField(
-          controller: textController,
-          decoration: const InputDecoration(
-            labelText: 'Name',
-            hintText: 'Pavindran',
+        content: Padding(
+          padding:
+              EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          child: SingleChildScrollView(
+            child: TextField(
+              controller: textController,
+              decoration: const InputDecoration(
+                labelText: 'Name',
+                hintText: 'Pavindran',
+              ),
+            ),
           ),
         ),
         actions: [
@@ -165,23 +164,60 @@ class _BarRow extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 4),
-        Container(
-          height: 10,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: Colors.grey.shade200,
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: FractionallySizedBox(
-            alignment: Alignment.centerLeft,
-            widthFactor: ratio,
+        Align(
+          alignment: Alignment.centerLeft,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 240),
             child: Container(
+              height: 10,
               decoration: BoxDecoration(
-                color: color,
+                color: Colors.grey.shade200,
                 borderRadius: BorderRadius.circular(6),
+              ),
+              child: FractionallySizedBox(
+                alignment: Alignment.centerLeft,
+                widthFactor: ratio,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
               ),
             ),
           ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ThemeSelector extends StatelessWidget {
+  const _ThemeSelector({required this.controller});
+  final LedgerController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final current = controller.settings.themeMode;
+    return Column(
+      children: [
+        RadioListTile<String>(
+          value: 'system',
+          groupValue: current,
+          title: const Text('Use device theme'),
+          onChanged: (v) => controller.setThemeMode(v ?? 'system'),
+        ),
+        RadioListTile<String>(
+          value: 'light',
+          groupValue: current,
+          title: const Text('Light'),
+          onChanged: (v) => controller.setThemeMode(v ?? 'light'),
+        ),
+        RadioListTile<String>(
+          value: 'dark',
+          groupValue: current,
+          title: const Text('Dark'),
+          onChanged: (v) => controller.setThemeMode(v ?? 'dark'),
         ),
       ],
     );

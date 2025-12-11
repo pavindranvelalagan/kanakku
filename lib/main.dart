@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import 'models.dart';
 import 'screens/home.dart';
 import 'screens/profile.dart';
 import 'screens/subscriptions.dart';
@@ -23,17 +24,75 @@ class KanakkuApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Kanakku',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
-        useMaterial3: true,
-        scaffoldBackgroundColor: Colors.grey.shade50,
-      ),
-      home: SplashGate(controller: controller),
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        return MaterialApp(
+          title: 'Kanakku',
+          theme: _lightTheme,
+          darkTheme: _darkTheme,
+          themeMode: _themeModeFrom(settings: controller.settings),
+          home: SplashGate(controller: controller),
+        );
+      },
     );
   }
 }
+
+ThemeMode _themeModeFrom({required AppSettings settings}) {
+  switch (settings.themeMode) {
+    case 'light':
+      return ThemeMode.light;
+    case 'dark':
+      return ThemeMode.dark;
+    default:
+      return ThemeMode.system;
+  }
+}
+
+final _accentBlue = const Color(0xFF1DA1F2);
+
+final _lightTheme = ThemeData(
+  useMaterial3: true,
+  brightness: Brightness.light,
+  colorScheme: ColorScheme.light(
+    primary: _accentBlue,
+    secondary: _accentBlue,
+    surface: Colors.white,
+    background: Colors.white,
+  ),
+  scaffoldBackgroundColor: Colors.white,
+  appBarTheme: const AppBarTheme(
+    backgroundColor: Colors.white,
+    foregroundColor: Colors.black,
+    elevation: 0.5,
+  ),
+  floatingActionButtonTheme: const FloatingActionButtonThemeData(
+    backgroundColor: Colors.black,
+    foregroundColor: Colors.white,
+  ),
+);
+
+final _darkTheme = ThemeData(
+  useMaterial3: true,
+  brightness: Brightness.dark,
+  colorScheme: ColorScheme.dark(
+    primary: _accentBlue,
+    secondary: _accentBlue,
+    surface: Colors.black,
+    background: Colors.black,
+  ),
+  scaffoldBackgroundColor: Colors.black,
+  appBarTheme: const AppBarTheme(
+    backgroundColor: Colors.black,
+    foregroundColor: Colors.white,
+    elevation: 0.5,
+  ),
+  floatingActionButtonTheme: const FloatingActionButtonThemeData(
+    backgroundColor: Colors.white,
+    foregroundColor: Colors.black,
+  ),
+);
 
 class SplashGate extends StatefulWidget {
   const SplashGate({super.key, required this.controller});
@@ -184,38 +243,35 @@ class _MainShellState extends State<MainShell> {
         return Scaffold(
           appBar: AppBar(
             title: Text(title),
+            centerTitle: false,
           ),
           body: _buildBody(),
-          bottomNavigationBar: NavigationBar(
-            selectedIndex: _index,
-            onDestinationSelected: (value) {
-              setState(() => _index = value);
-            },
-            destinations: const [
-              NavigationDestination(
+          bottomNavigationBar: BottomNavigationBar(
+            currentIndex: _index,
+            onTap: (value) => setState(() => _index = value),
+            showSelectedLabels: false,
+            showUnselectedLabels: false,
+            type: BottomNavigationBarType.fixed,
+            items: const [
+              BottomNavigationBarItem(
                 icon: Icon(Icons.group_outlined),
-                selectedIcon: Icon(Icons.group),
-                label: 'Friends',
+                label: '',
               ),
-              NavigationDestination(
+              BottomNavigationBarItem(
                 icon: Icon(Icons.receipt_long_outlined),
-                selectedIcon: Icon(Icons.receipt_long),
-                label: 'Subscriptions',
+                label: '',
               ),
-              NavigationDestination(
+              BottomNavigationBarItem(
                 icon: Icon(Icons.arrow_downward_outlined),
-                selectedIcon: Icon(Icons.arrow_downward),
-                label: 'You Owe',
+                label: '',
               ),
-              NavigationDestination(
+              BottomNavigationBarItem(
                 icon: Icon(Icons.arrow_upward_outlined),
-                selectedIcon: Icon(Icons.arrow_upward),
-                label: 'Owed To You',
+                label: '',
               ),
-              NavigationDestination(
+              BottomNavigationBarItem(
                 icon: Icon(Icons.person_outline),
-                selectedIcon: Icon(Icons.person),
-                label: 'Profile',
+                label: '',
               ),
             ],
           ),

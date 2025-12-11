@@ -157,7 +157,7 @@ class LedgerRepository {
     if (data is Map) {
       return AppSettings.fromMap(Map<dynamic, dynamic>.from(data));
     }
-    return AppSettings(userName: '');
+    return AppSettings(userName: '', themeMode: 'system');
   }
 
   Future<void> saveSettings(AppSettings settings) async {
@@ -187,7 +187,7 @@ class LedgerController extends ChangeNotifier {
   List<Friend> friends = [];
   List<LedgerTransaction> transactions = [];
   List<SubscriptionPlan> subscriptions = [];
-  AppSettings settings = AppSettings(userName: '');
+  AppSettings settings = AppSettings(userName: '', themeMode: 'system');
 
   Future<void> _refresh() async {
     friends = repository.loadFriends();
@@ -313,6 +313,12 @@ class LedgerController extends ChangeNotifier {
   Future<void> setUserName(String name) async {
     final trimmed = name.trim();
     settings = settings.copyWith(userName: trimmed);
+    await repository.saveSettings(settings);
+    notifyListeners();
+  }
+
+  Future<void> setThemeMode(String mode) async {
+    settings = settings.copyWith(themeMode: mode);
     await repository.saveSettings(settings);
     notifyListeners();
   }

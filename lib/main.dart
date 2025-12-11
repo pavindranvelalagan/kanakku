@@ -1,6 +1,6 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'models.dart';
 import 'screens/home.dart';
@@ -8,6 +8,9 @@ import 'screens/profile.dart';
 import 'screens/subscriptions.dart';
 import 'screens/transactions_list.dart';
 import 'storage.dart';
+import 'theme/app_theme.dart';
+import 'theme/colors.dart';
+import 'widgets/app_nav_bar.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,8 +32,9 @@ class KanakkuApp extends StatelessWidget {
       builder: (context, _) {
         return MaterialApp(
           title: 'Kanakku',
-          theme: _lightTheme,
-          darkTheme: _darkTheme,
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
           themeMode: _themeModeFrom(settings: controller.settings),
           home: SplashGate(controller: controller),
         );
@@ -50,49 +54,6 @@ ThemeMode _themeModeFrom({required AppSettings settings}) {
   }
 }
 
-final _accentBlue = const Color(0xFF0097B2);
-
-final _lightTheme = ThemeData(
-  useMaterial3: true,
-  brightness: Brightness.light,
-  colorScheme: ColorScheme.light(
-    primary: _accentBlue,
-    secondary: _accentBlue,
-    surface: Colors.white,
-    background: Colors.white,
-  ),
-  scaffoldBackgroundColor: Colors.white,
-  appBarTheme: const AppBarTheme(
-    backgroundColor: Colors.white,
-    foregroundColor: Colors.black,
-    elevation: 0.5,
-  ),
-  floatingActionButtonTheme: const FloatingActionButtonThemeData(
-    backgroundColor: Colors.black,
-    foregroundColor: Colors.white,
-  ),
-);
-
-final _darkTheme = ThemeData(
-  useMaterial3: true,
-  brightness: Brightness.dark,
-  colorScheme: ColorScheme.dark(
-    primary: _accentBlue,
-    secondary: _accentBlue,
-    surface: Colors.black,
-    background: Colors.black,
-  ),
-  scaffoldBackgroundColor: Colors.black,
-  appBarTheme: const AppBarTheme(
-    backgroundColor: Colors.black,
-    foregroundColor: Colors.white,
-    elevation: 0.5,
-  ),
-  floatingActionButtonTheme: const FloatingActionButtonThemeData(
-    backgroundColor: Colors.white,
-    foregroundColor: Colors.black,
-  ),
-);
 
 class SplashGate extends StatefulWidget {
   const SplashGate({super.key, required this.controller});
@@ -102,32 +63,15 @@ class SplashGate extends StatefulWidget {
   State<SplashGate> createState() => _SplashGateState();
 }
 
-class _SplashGateState extends State<SplashGate>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _scale;
-  late final Animation<double> _fade;
+class _SplashGateState extends State<SplashGate> {
   bool _showMain = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    );
-    _scale = CurvedAnimation(parent: _controller, curve: Curves.easeOutBack);
-    _fade = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
-    _controller.forward();
-    Timer(const Duration(milliseconds: 1500), () {
-      setState(() => _showMain = true);
+    Future.delayed(const Duration(milliseconds: 2000), () {
+      if (mounted) setState(() => _showMain = true);
     });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
   }
 
   @override
@@ -135,46 +79,54 @@ class _SplashGateState extends State<SplashGate>
     if (_showMain) {
       return MainShell(controller: widget.controller);
     }
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.backgroundLight, // Or check theme
       body: Center(
-        child: FadeTransition(
-          opacity: _fade,
-          child: ScaleTransition(
-            scale: _scale,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 96,
-                  height: 96,
-                  decoration: BoxDecoration(
-                    color: Colors.teal.shade100,
-                    shape: BoxShape.circle,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.3),
+                    blurRadius: 30,
+                    offset: const Offset(0, 10),
                   ),
-                  child: Center(
-                    child: Text(
-                      'K',
-                      style: TextStyle(
-                        fontSize: 48,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.teal.shade800,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Kanakku',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.teal.shade800,
+                ],
+              ),
+              child: Center(
+                child: Text(
+                  'K',
+                  style: GoogleFonts.outfit(
+                    fontSize: 64,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
                 ),
-              ],
-            ),
-          ),
+              ),
+            ).animate()
+             .scale(duration: 600.ms, curve: Curves.easeOutBack)
+             .fadeIn(duration: 500.ms),
+            
+            const SizedBox(height: 24),
+            
+            Text(
+              'Kanakku',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.2,
+                color: AppColors.primary,
+              ),
+            ).animate(delay: 300.ms)
+             .fadeIn(duration: 500.ms)
+             .moveY(begin: 20, end: 0, duration: 500.ms, curve: Curves.easeOut),
+          ],
         ),
       ),
     );
@@ -239,39 +191,19 @@ class _MainShellState extends State<MainShell> {
     return AnimatedBuilder(
       animation: widget.controller,
       builder: (context, _) {
-        final title = widget.controller.effectiveAppTitle();
         return Scaffold(
-          appBar: AppBar(
-            title: Text(title),
-            centerTitle: false,
-          ),
-          body: _buildBody(),
-          bottomNavigationBar: BottomNavigationBar(
-            currentIndex: _index,
-            onTap: (value) => setState(() => _index = value),
-            showSelectedLabels: false,
-            showUnselectedLabels: false,
-            type: BottomNavigationBarType.fixed,
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.group_outlined),
-                label: '',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.receipt_long_outlined),
-                label: '',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.arrow_downward_outlined),
-                label: '',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.arrow_upward_outlined),
-                label: '',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.person_outline),
-                label: '',
+          extendBody: true, // Allow body to go behind the floating nav
+          body: Stack(
+            children: [
+              _buildBody(),
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: AppNavBar(
+                  currentIndex: _index,
+                  onTap: (value) => setState(() => _index = value),
+                ),
               ),
             ],
           ),
@@ -281,25 +213,49 @@ class _MainShellState extends State<MainShell> {
   }
 
   Widget _buildBody() {
+    // Add padding to bottom to account for the floating nav
+    final bottomPadding = EdgeInsets.only(bottom: 100.0); 
+
+    Widget content;
     switch (_index) {
       case 0:
-        return HomeScreen(controller: widget.controller);
+        content = HomeScreen(controller: widget.controller);
+        break;
       case 1:
-        return SubscriptionScreen(controller: widget.controller);
+        content = SubscriptionScreen(controller: widget.controller);
+        break;
       case 2:
-        return TransactionsListScreen(
+        content = TransactionsListScreen(
           controller: widget.controller,
           filter: TransactionFilter.youOwe,
         );
+        break;
       case 3:
-        return TransactionsListScreen(
+        content = TransactionsListScreen(
           controller: widget.controller,
           filter: TransactionFilter.owedToYou,
         );
+        break;
       case 4:
-        return ProfileScreen(controller: widget.controller);
+        content = ProfileScreen(controller: widget.controller);
+        break;
       default:
-        return HomeScreen(controller: widget.controller);
+        content = HomeScreen(controller: widget.controller);
     }
+    
+    // Wrap content to ensure it doesn't get hidden behind the nav
+    // Use SafeArea or Padding. Since screens might have their own Scaffolds/Lists, 
+    // wrapping here might be tricky if they rely on full height.
+    // However, since we use Stack for the Nav, we need to ensure the list has padding at the bottom.
+    // The cleanest way is to pass this padding to the screens, BUT 
+    // for now, let's wrap strictly the display. 
+    // Actually, most screens are Lists. We should ideally update the screens to have bottom padding.
+    // For now, I will wrap in a Container with padding, but this might clip background colors?
+    // No, Scaffold background is global.
+    
+    return Container(
+      padding: bottomPadding,
+      child: content,
+    );
   }
 }

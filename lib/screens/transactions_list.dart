@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../models.dart';
 import '../storage.dart';
+import '../theme/colors.dart';
+import '../widgets/premium_card.dart';
 
 enum TransactionFilter { youOwe, owedToYou }
 
@@ -26,75 +30,123 @@ class TransactionsListScreen extends StatelessWidget {
         final title = filter == TransactionFilter.youOwe
             ? 'You owe these'
             : 'They owe you';
-        return Padding(
-          padding: const EdgeInsets.all(16),
-          child: txs.isEmpty
-              ? Center(
-                  child: Text(
-                    'No transactions here yet.',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyMedium
-                        ?.copyWith(color: Colors.grey),
+        
+        return Scaffold(
+          backgroundColor: AppColors.backgroundLight,
+          body: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.outfit(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimaryLight,
                   ),
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 8),
-                    Expanded(
-                      child: ListView.separated(
-                        itemCount: txs.length,
-                        separatorBuilder: (_, __) => const Divider(height: 1),
-                        itemBuilder: (context, index) {
-                          final tx = txs[index];
-                          final friend =
-                              controller.friends.firstWhere((f) => f.id == tx.friendId,
-                                  orElse: () => Friend(
-                                        id: tx.friendId,
-                                        name: 'Unknown',
-                                        createdAt: DateTime.now(),
-                                      ));
-                          final settled =
-                              controller.balanceForFriend(friend.id) == 0;
-                          final scheme = Theme.of(context).colorScheme;
-                          final color = tx.delta >= 0
-                              ? scheme.primary
-                              : scheme.onSurface.withOpacity(0.8);
-                          final strike = settled
-                              ? TextStyle(
-                                  decoration: TextDecoration.lineThrough,
-                                  color: Colors.grey,
-                                )
-                              : null;
-                          return ListTile(
-                            title: Text(friend.name),
-                            subtitle: Text(
-                                '${formatDateShort(tx.date)} • ${tx.description}',
-                                style: strike),
-                            trailing: Text(
-                              formatSignedAmount(tx.delta),
-                              style: TextStyle(
-                                color: settled ? Colors.grey : color,
-                                fontWeight: FontWeight.w700,
-                                decoration:
-                                    settled ? TextDecoration.lineThrough : null,
-                              ),
-                            ),
-                            textColor: settled ? Colors.grey : null,
-                          );
-                        },
-                      ),
-                    ),
-                  ],
                 ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: txs.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.check_circle_outline, 
+                                size: 64, 
+                                color: Colors.grey.withOpacity(0.3)
+                              ).animate().scale(),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No transactions found.',
+                                style: GoogleFonts.outfit(
+                                  color: AppColors.textSecondaryLight,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.separated(
+                          itemCount: txs.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 16),
+                          padding: const EdgeInsets.only(bottom: 24),
+                          itemBuilder: (context, index) {
+                            final tx = txs[index];
+                            final friend =
+                                controller.friends.firstWhere((f) => f.id == tx.friendId,
+                                    orElse: () => Friend(
+                                          id: tx.friendId,
+                                          name: 'Unknown',
+                                          createdAt: DateTime.now(),
+                                        ));
+                            final settled =
+                                controller.balanceForFriend(friend.id) == 0;
+                            
+                            final owesYou = tx.delta >= 0;
+
+                            return PremiumCard(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    backgroundColor: (owesYou ? AppColors.success : AppColors.error).withOpacity(0.1),
+                                    child: Text(
+                                      (friend.name.isNotEmpty ? friend.name[0] : '?').toUpperCase(),
+                                      style: GoogleFonts.outfit(
+                                        color: owesYou ? AppColors.success : AppColors.error,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          friend.name,
+                                          style: GoogleFonts.outfit(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                            color: settled ? AppColors.textSecondaryLight : AppColors.textPrimaryLight,
+                                            decoration: settled ? TextDecoration.lineThrough : null,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          '${formatDateShort(tx.date)} • ${tx.description}',
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 12,
+                                            color: AppColors.textSecondaryLight,
+                                            decoration: settled ? TextDecoration.lineThrough : null,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Text(
+                                    formatSignedAmount(tx.delta),
+                                    style: GoogleFonts.outfit(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                      color: settled 
+                                          ? AppColors.textSecondaryLight 
+                                          : (owesYou ? AppColors.success : AppColors.error),
+                                      decoration: settled ? TextDecoration.lineThrough : null,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ).animate().fadeIn(delay: (50 * index).ms).slideX(begin: 0.1, end: 0);
+                          },
+                        ),
+                ),
+              ],
+            ),
+          ),
         );
       },
     );

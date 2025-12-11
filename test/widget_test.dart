@@ -17,7 +17,8 @@ void main() {
     await repository.ensureMonthlySubscriptionCharges(DateTime.now());
     final controller = LedgerController(repository);
 
-    await tester.pumpWidget(UniShareApp(controller: controller));
+    await tester.pumpWidget(KanakkuApp(controller: controller));
+    await tester.pump(const Duration(seconds: 2));
     await tester.pumpAndSettle();
 
     expect(find.text('Kanakku'), findsOneWidget);

@@ -14,58 +14,61 @@ class SubscriptionScreen extends StatelessWidget {
     return AnimatedBuilder(
       animation: controller,
       builder: (context, _) {
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Subscriptions'),
-          ),
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => _showAddSubscriptionSheet(context),
-            icon: const Icon(Icons.add),
-            label: const Text('Add plan'),
-          ),
-          body: Padding(
-            padding: const EdgeInsets.all(16),
-            child: controller.subscriptions.isEmpty
-                ? EmptyState(
-                    title: 'No subscriptions',
-                    message: 'Add a plan to auto-bill friends each month.',
-                    actionLabel: 'Add plan',
-                    onAction: () => _showAddSubscriptionSheet(context),
-                  )
-                : ListView.separated(
-                    itemCount: controller.subscriptions.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
-                    itemBuilder: (context, index) {
-                      final plan = controller.subscriptions[index];
-                      final members = plan.memberIds
-                          .map(
-                            (id) => controller.friends
-                                .firstWhere(
-                                  (f) => f.id == id,
-                                  orElse: () => Friend(
-                                    id: id,
-                                    name: 'Unknown',
-                                    createdAt: DateTime.now(),
-                                  ),
-                                )
-                                .name,
-                          )
-                          .toList();
-                      return ListTile(
-                        title: Text(plan.name),
-                        subtitle: Text(
-                          'Rs ${plan.amountPerMember} per member • ${members.join(', ')}',
-                        ),
-                        trailing: Text(
-                          plan.lastBilledMonth.isEmpty
-                              ? 'Not billed yet'
-                              : 'Billed ${plan.lastBilledMonth}',
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                      );
-                    },
-                  ),
-          ),
+        return Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: controller.subscriptions.isEmpty
+                  ? EmptyState(
+                      title: 'No subscriptions',
+                      message: 'Add a plan to auto-bill friends each month.',
+                      actionLabel: 'Add plan',
+                      onAction: () => _showAddSubscriptionSheet(context),
+                    )
+                  : ListView.separated(
+                      itemCount: controller.subscriptions.length,
+                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      itemBuilder: (context, index) {
+                        final plan = controller.subscriptions[index];
+                        final members = plan.memberIds
+                            .map(
+                              (id) => controller.friends
+                                  .firstWhere(
+                                    (f) => f.id == id,
+                                    orElse: () => Friend(
+                                      id: id,
+                                      name: 'Unknown',
+                                      createdAt: DateTime.now(),
+                                    ),
+                                  )
+                                  .name,
+                            )
+                            .toList();
+                        return ListTile(
+                          onLongPress: () => _confirmDelete(context, plan),
+                          title: Text(plan.name),
+                          subtitle: Text(
+                            'Rs ${plan.amountPerMember} per member • ${members.join(', ')}',
+                          ),
+                          trailing: Text(
+                            plan.lastBilledMonth.isEmpty
+                                ? 'Not billed yet'
+                                : 'Billed ${plan.lastBilledMonth}',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+            Positioned(
+              right: 16,
+              bottom: 16,
+              child: FloatingActionButton(
+                onPressed: () => _showAddSubscriptionSheet(context),
+                child: const Icon(Icons.add),
+              ),
+            ),
+          ],
         );
       },
     );
@@ -82,6 +85,34 @@ class SubscriptionScreen extends StatelessWidget {
         child: AddSubscriptionSheet(controller: controller),
       ),
     );
+  }
+
+  Future<void> _confirmDelete(
+      BuildContext context, SubscriptionPlan plan) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete subscription?'),
+        content: Text('Delete "${plan.name}" and its future charges?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await controller.deleteSubscription(plan.id);
+    }
   }
 }
 

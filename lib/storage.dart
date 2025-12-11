@@ -5,11 +5,17 @@ import 'package:uuid/uuid.dart';
 import 'models.dart';
 
 class LedgerRepository {
-  LedgerRepository._(this._friends, this._transactions, this._subscriptions);
+  LedgerRepository._(
+    this._friends,
+    this._transactions,
+    this._subscriptions,
+    this._settings,
+  );
 
   final Box _friends;
   final Box _transactions;
   final Box _subscriptions;
+  final Box _settings;
   final Uuid _uuid = const Uuid();
 
   static Future<LedgerRepository> bootstrap() async {
@@ -17,7 +23,13 @@ class LedgerRepository {
     final friendsBox = await Hive.openBox('friends');
     final transactionsBox = await Hive.openBox('transactions');
     final subscriptionsBox = await Hive.openBox('subscriptions');
-    return LedgerRepository._(friendsBox, transactionsBox, subscriptionsBox);
+    final settingsBox = await Hive.openBox('settings');
+    return LedgerRepository._(
+      friendsBox,
+      transactionsBox,
+      subscriptionsBox,
+      settingsBox,
+    );
   }
 
   List<Friend> loadFriends() {
@@ -62,6 +74,18 @@ class LedgerRepository {
 
   Future<void> deleteTransaction(String id) async {
     await _transactions.delete(id);
+  }
+
+  Future<void> deleteSubscription(String id) async {
+    await _subscriptions.delete(id);
+    final keysToDelete = _transactions.keys.where((key) {
+      final value = _transactions.get(key);
+      if (value is Map) {
+        return value['subscriptionId'] == id;
+      }
+      return false;
+    }).toList();
+    await _transactions.deleteAll(keysToDelete);
   }
 
   Future<void> deleteFriend(String id) async {
@@ -127,6 +151,18 @@ class LedgerRepository {
 
   static String _monthStamp(DateTime date) =>
       '${date.year}-${date.month.toString().padLeft(2, '0')}';
+
+  AppSettings loadSettings() {
+    final data = _settings.get('settings');
+    if (data is Map) {
+      return AppSettings.fromMap(Map<dynamic, dynamic>.from(data));
+    }
+    return AppSettings(userName: '');
+  }
+
+  Future<void> saveSettings(AppSettings settings) async {
+    await _settings.put('settings', settings.toMap());
+  }
 }
 
 class LedgerController extends ChangeNotifier {
@@ -134,9 +170,11 @@ class LedgerController extends ChangeNotifier {
     _friendsListener = repository._friends.listenable();
     _txListener = repository._transactions.listenable();
     _subscriptionListener = repository._subscriptions.listenable();
+    _settingsListener = repository._settings.listenable();
     _friendsListener.addListener(_refresh);
     _txListener.addListener(_refresh);
     _subscriptionListener.addListener(_refresh);
+    _settingsListener.addListener(_refresh);
     _refresh();
   }
 
@@ -144,15 +182,18 @@ class LedgerController extends ChangeNotifier {
   late final ValueListenable _friendsListener;
   late final ValueListenable _txListener;
   late final ValueListenable _subscriptionListener;
+  late final ValueListenable _settingsListener;
 
   List<Friend> friends = [];
   List<LedgerTransaction> transactions = [];
   List<SubscriptionPlan> subscriptions = [];
+  AppSettings settings = AppSettings(userName: '');
 
   Future<void> _refresh() async {
     friends = repository.loadFriends();
     transactions = repository.loadTransactions();
     subscriptions = repository.loadSubscriptions();
+    settings = repository.loadSettings();
     notifyListeners();
   }
 
@@ -264,4 +305,27 @@ class LedgerController extends ChangeNotifier {
   Future<void> deleteFriend(String id) async {
     await repository.deleteFriend(id);
   }
+
+  Future<void> deleteSubscription(String id) async {
+    await repository.deleteSubscription(id);
+  }
+
+  Future<void> setUserName(String name) async {
+    final trimmed = name.trim();
+    settings = settings.copyWith(userName: trimmed);
+    await repository.saveSettings(settings);
+    notifyListeners();
+  }
+
+  String effectiveAppTitle() {
+    final name = settings.userName.trim();
+    if (name.isEmpty) return 'Kanakku';
+    return "$name's Kanakku";
+  }
+
+  List<LedgerTransaction> owedByYou() =>
+      transactions.where((t) => t.delta < 0).toList();
+
+  List<LedgerTransaction> owedToYou() =>
+      transactions.where((t) => t.delta > 0).toList();
 }

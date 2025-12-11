@@ -151,6 +151,23 @@ class SubscriptionPlan {
   }
 }
 
+class AppSettings {
+  AppSettings({required this.userName});
+
+  final String userName;
+
+  AppSettings copyWith({String? userName}) {
+    return AppSettings(userName: userName ?? this.userName);
+  }
+
+  Map<String, dynamic> toMap() => {'userName': userName};
+
+  static AppSettings fromMap(Map<dynamic, dynamic>? map) {
+    if (map == null) return AppSettings(userName: '');
+    return AppSettings(userName: map['userName'] as String? ?? '');
+  }
+}
+
 String formatSignedAmount(int amount) {
   final prefix = amount >= 0 ? '+' : '-';
   final value = amount.abs();

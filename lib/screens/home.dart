@@ -4,7 +4,6 @@ import '../models.dart';
 import '../storage.dart';
 import '../widgets/common.dart';
 import 'friend_detail.dart';
-import 'subscriptions.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key, required this.controller});
@@ -17,81 +16,70 @@ class HomeScreen extends StatelessWidget {
       animation: controller,
       builder: (context, _) {
         final net = controller.totalNetBalance();
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Kanakku'),
-            actions: [
-              IconButton(
-                tooltip: 'Subscriptions',
-                icon: const Icon(Icons.receipt_long),
-                onPressed: () async {
-                  await Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => SubscriptionScreen(controller: controller),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => _showAddFriendDialog(context),
-            icon: const Icon(Icons.person_add),
-            label: const Text('Add friend'),
-          ),
-          body: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TotalHeader(net: net),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: controller.friends.isEmpty
-                      ? EmptyState(
-                          title: 'No friends yet',
-                          message:
-                              'Add your friends to start tracking shared expenses.',
-                          actionLabel: 'Add friend',
-                          onAction: () => _showAddFriendDialog(context),
-                        )
-                      : ListView.separated(
-                          itemCount: controller.friends.length,
-                          separatorBuilder: (_, __) => const Divider(height: 1),
-                          itemBuilder: (context, index) {
-                            final friend = controller.friends[index];
-                            final balance = controller.balanceForFriend(friend.id);
-                            return ListTile(
-                              onLongPress: () =>
-                                  _confirmDeleteFriend(context, friend),
-                              title: Text(friend.name),
-                              subtitle: const Text('Net balance'),
-                              trailing: Text(
-                                formatSignedAmount(balance),
-                                style: TextStyle(
-                                  color: balance >= 0
-                                      ? Colors.green.shade700
-                                      : Colors.red.shade700,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              onTap: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => FriendDetailScreen(
-                                      controller: controller,
-                                      friend: friend,
-                                    ),
+        return Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TotalHeader(net: net),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: controller.friends.isEmpty
+                        ? EmptyState(
+                            title: 'No friends yet',
+                            message:
+                                'Add your friends to start tracking shared expenses.',
+                            actionLabel: 'Add friend',
+                            onAction: () => _showAddFriendDialog(context),
+                          )
+                        : ListView.separated(
+                            itemCount: controller.friends.length,
+                            separatorBuilder: (_, __) => const Divider(height: 1),
+                            itemBuilder: (context, index) {
+                              final friend = controller.friends[index];
+                              final balance = controller.balanceForFriend(friend.id);
+                              return ListTile(
+                                onLongPress: () =>
+                                    _confirmDeleteFriend(context, friend),
+                                title: Text(friend.name),
+                                subtitle: const Text('Net balance'),
+                                trailing: Text(
+                                  formatSignedAmount(balance),
+                                  style: TextStyle(
+                                    color: balance >= 0
+                                        ? Colors.green.shade700
+                                        : Colors.red.shade700,
+                                    fontWeight: FontWeight.w600,
                                   ),
-                                );
-                              },
-                            );
-                          },
-                        ),
-                ),
-              ],
+                                ),
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => FriendDetailScreen(
+                                        controller: controller,
+                                        friend: friend,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
             ),
-          ),
+            Positioned(
+              right: 16,
+              bottom: 16,
+              child: FloatingActionButton(
+                onPressed: () => _showAddFriendDialog(context),
+                child: const Icon(Icons.person_add),
+              ),
+            ),
+          ],
         );
       },
     );

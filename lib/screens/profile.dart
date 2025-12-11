@@ -49,7 +49,7 @@ class ProfileScreen extends StatelessWidget {
               Text(
                 name.isEmpty ? "Tap to set your name" : name,
                 style: GoogleFonts.outfit(
-                  fontSize: 18,
+                  fontSize: 32,
                   fontWeight: FontWeight.w700,
                 ),
               ),

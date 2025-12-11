@@ -64,9 +64,9 @@ class HomeScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 20),
                     TotalHeader(net: net),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 20),
                     Text(
                       'Friends',
                       style: GoogleFonts.outfit(
@@ -75,7 +75,7 @@ class HomeScreen extends StatelessWidget {
                         color: scheme.onSurface,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
                   ]),
                 ),
               ),

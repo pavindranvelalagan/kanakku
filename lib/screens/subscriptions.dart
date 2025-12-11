@@ -40,7 +40,7 @@ class SubscriptionScreen extends StatelessWidget {
                       .headlineSmall
                       ?.copyWith(fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 10),
                 Expanded(
                   child: controller.subscriptions.isEmpty
                       ? EmptyState(
